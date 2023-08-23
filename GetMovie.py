@@ -363,6 +363,15 @@ def get_actress_movie_page(id_in_javbus, page_num) -> (List[MovieVo], bool):
     movie_list: List[MovieVo] = []
     res = req_util.try_get_req_times(url=f"{URL_HOST}{API_PATH_ACTRESS_MOVIE}/{id_in_javbus}/{page_num}",
                                      msg=f"获取女优影片列表: 第{page_num}页 女优: {id_in_javbus}")
+    if not res:
+        res = req_util.try_get_req_times(url=f"{URL_HOST_JP}{API_PATH_ACTRESS_MOVIE}/{id_in_javbus}/{page_num}",
+                                         msg=f"获取女优影片列表, 没有中文, 获取日文: 第{page_num}页 女优: {id_in_javbus}")
+    if not res:
+        res = req_util.try_get_req_times(url=f"{URL_HOST_EN}{API_PATH_ACTRESS_MOVIE}/{id_in_javbus}/{page_num}",
+                                         msg=f"获取女优影片列表, 没有中文, 获取英文: 第{page_num}页 女优: {id_in_javbus}")
+    if not res:
+        res = req_util.try_get_req_times(url=f"{URL_HOST_KR}{API_PATH_ACTRESS_MOVIE}/{id_in_javbus}/{page_num}",
+                                         msg=f"获取女优影片列表, 没有中文, 获取韩文: 第{page_num}页 女优: {id_in_javbus}")
     have_next_page = False
     if res:
         etree_res = etree.HTML(res.text)
@@ -372,6 +381,8 @@ def get_actress_movie_page(id_in_javbus, page_num) -> (List[MovieVo], bool):
             if page_list[-1] == '下一頁':
                 have_next_page = True
         id_fanhao_list = [url_movie_page.split('/')[-1] for url_movie_page in url_movie_page_list]
+        print(id_fanhao_list)
+        print(len(id_fanhao_list))
 
         # 同步获取影片信息
         # for i, id_fanhao in enumerate(id_fanhao_list):
@@ -386,14 +397,14 @@ def get_actress_movie_page(id_in_javbus, page_num) -> (List[MovieVo], bool):
         #     process_log.process4(f"获取影片信息: 第{i + 1}个 女优: {id_in_javbus} 第{page_num}页 End")
 
         # 创建线程池, 异步多线程获取影片信息(整页开始)
-        with concurrent.futures.ThreadPoolExecutor() as executor:
-            # 开启多个线程获取影片详情
-            futures = [executor.submit(get_movie_detail_async, args=(id_fanhao, id_in_javbus, page_num, i))
-                       for i, id_fanhao in enumerate(id_fanhao_list)]
-        # 等待所有线程完成并获取结果
-        for future in concurrent.futures.as_completed(futures):
-            if future.result():
-                movie_list.append(future.result())
+        # with concurrent.futures.ThreadPoolExecutor() as executor:
+        #     # 开启多个线程获取影片详情
+        #     futures = [executor.submit(get_movie_detail_async, args=(id_fanhao, id_in_javbus, page_num, i))
+        #                for i, id_fanhao in enumerate(id_fanhao_list)]
+        # # 等待所有线程完成并获取结果
+        # for future in concurrent.futures.as_completed(futures):
+        #     if future.result():
+        #         movie_list.append(future.result())
     return movie_list, have_next_page
 
 
@@ -418,7 +429,7 @@ def test_get_actress_movie():
     # actress_dict = {"id_in_javbus": "lf1", "url_avatar": "/imgs/actress/371.jpg", "nm_cn": "朝桐光",
     #                 "nm_jp": "朝桐光", "nm_en": "Akari Asagiri", "nm_kr": "Akari Asagiri"}
     # actress_vo: ActressVo = dict_to_obj2(ActressVo, actress_dict)
-    id_in_javbus = 'lf1'
+    id_in_javbus = 'y1d'
     get_actress_movie(id_in_javbus)
 
 
