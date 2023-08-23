@@ -1,3 +1,4 @@
+import re
 import time
 from typing import List, Tuple
 
@@ -14,7 +15,8 @@ from MyUtil.MyUtil import MyThread, write_data_to_file
 from MyUtil.XpathUtil import xpath_util
 from ReqUtil.ReqUtil import ReqUtil
 from ReqUtil.SavePicUtil import SavePicUtil
-
+import warnings
+warnings.filterwarnings("ignore", category=FutureWarning)
 req_util = ReqUtil()
 save_pic_util = SavePicUtil()
 
@@ -29,7 +31,7 @@ def get_actresses_page(page_num) -> List[ActressVo]:
         etree_res = etree.HTML(res.text)
         a_actress_list = etree_res.xpath("//a[@class='avatar-box text-center']")
         for i, a_actress in enumerate(a_actress_list):
-            LogUtil.LOG_PROCESS_ACTRESS_ORDER = i+1
+            LogUtil.LOG_PROCESS_ACTRESS_ORDER = i + 1
             LogUtil.LOG_PROCESS_MOVIE_PAGE = 0
             LogUtil.LOG_PROCESS_MOVIE_ORDER = 0
             if StartPoint.START_POINT_ACTRESS_ORDER > 1:
@@ -40,7 +42,7 @@ def get_actresses_page(page_num) -> List[ActressVo]:
             id_in_javbus = xpath_util.get_unique(a_actress, './@href').split('/')[-1]
 
             actress_vo = save_actress(id_in_javbus)
-            com_log.info(f"获取到女优: {actress_vo} 第{page_num}页 第{i + 1}个")
+            # com_log.info(f"获取到女优: {actress_vo} 第{page_num}页 第{i + 1}个")
             actress_list.append(actress_vo)
 
             process_log.process2(f"获取女优信息: 第{i + 1}个 第{page_num}页 End")
@@ -49,10 +51,12 @@ def get_actresses_page(page_num) -> List[ActressVo]:
 
 
 def get_actress_nm_lang(url_host_lang, id_in_javbus):
-
     res = req_util.try_get_req_times(url=f"{url_host_lang}{API_PATH_ACTRESS_MOVIE}/{id_in_javbus}",
                                      msg=f"获取女优多国语言名: url_host_lang: {url_host_lang} 女优ID: {id_in_javbus}")
     if res:
+        if url_host_lang == 'https://www.javbus.com':
+            print(res.text)
+
         return etree.HTML(res.text)
         # etree_res = etree.HTML(res.text)
         # xpath_list = etree_res.xpath("//div[@class='avatar-box aave']//span/text()")
@@ -68,6 +72,8 @@ def save_actress(id_in_javbus) -> ActressVo:
     :param actress_vo:
     :return:
     """
+
+    actress_vo = None
 
     # 获取女优多国语名 ↓↓↓
     t_cn = MyThread(func=get_actress_nm_lang, args=(URL_HOST_CN, id_in_javbus))
@@ -85,26 +91,27 @@ def save_actress(id_in_javbus) -> ActressVo:
     t_en.join()
     t_kr.join()
 
-    res_cn = t_jp.get_result() if t_jp.get_result() else '女友没有多国语影片页面'
-    res_jp = t_jp.get_result() if t_jp.get_result() else '女友没有多国语影片页面'
-    res_en = t_en.get_result() if t_en.get_result() else '女友没有多国语影片页面'
-    res_kr = t_kr.get_result() if t_kr.get_result() else '女友没有多国语影片页面'
+    res_cn = t_cn.get_result()
+    res_jp = t_jp.get_result()
+    res_en = t_en.get_result()
+    res_kr = t_kr.get_result()
 
     res_main = res_cn if res_cn else res_jp if res_jp else res_en if res_en else res_kr
     if res_main:
+
         url_avatar = xpath_util.get_unique(res_main, "//div[@class='avatar-box aave']//img/@src")
-        nm_cn = xpath_util.get_unique(res_cn, "//div[@class='avatar-box aave']//span/text()")
-        nm_jp = xpath_util.get_unique(res_jp, "//div[@class='avatar-box aave']//span/text()")
-        nm_en = xpath_util.get_unique(res_en, "//div[@class='avatar-box aave']//span/text()")
-        nm_kr = xpath_util.get_unique(res_kr, "//div[@class='avatar-box aave']//span/text()")
+        movie_num = ''.join(res_main.xpath("//a[@id='resultshowall']/text()")).strip()
+        result = re.search(r'\d+', movie_num)
+        if result:
+            movie_num = result.group()
+        nm_cn = xpath_util.get_unique(res_cn, "//div[@class='avatar-box aave']//span/text()") if res_cn else "没有获取到女优的中文页面"
+        nm_jp = xpath_util.get_unique(res_jp, "//div[@class='avatar-box aave']//span/text()") if res_cn else "没有获取到女优的日文页面"
+        nm_en = xpath_util.get_unique(res_en, "//div[@class='avatar-box aave']//span/text()") if res_cn else "没有获取到女优的英文页面"
+        nm_kr = xpath_util.get_unique(res_kr, "//div[@class='avatar-box aave']//span/text()") if res_cn else "没有获取到女优的韩文页面"
 
         actress_vo = ActressVo(id_in_javbus=id_in_javbus, url_avatar=url_avatar, nm_cn=nm_cn,
-                               nm_jp=nm_jp, nm_en=nm_en, nm_kr=nm_kr)
-
-        actress_vo.nm_jp = nm_jp
-        actress_vo.nm_en = nm_en
-        actress_vo.nm_kr = nm_kr
-
+                               nm_jp=nm_jp, nm_en=nm_en, nm_kr=nm_kr, movie_num=movie_num)
+        com_log.info(f"获取到女优: {actress_vo}")
         # 获取女优多国语名 ↑↑↑
 
         # 女优入库并保存JSON ↓↓↓
@@ -121,8 +128,9 @@ def save_actress(id_in_javbus) -> ActressVo:
         # 保存女优头像 ↑↑↑
 
         # 获取女优影片信息 ↓↓↓
-        get_actress_movie(actress_vo)
+        get_actress_movie(id_in_javbus)
         # 获取女优影片信息 ↑↑↑
+    return actress_vo
 
 
 def start():
@@ -144,9 +152,8 @@ def start():
             break
 
 
-# 按间距中的绿色按钮以运行脚本。
 def test_save_actress():
-    pass
+    actress_vo = save_actress(371)
 
 
 if __name__ == '__main__':
