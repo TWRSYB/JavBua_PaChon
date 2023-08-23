@@ -9,12 +9,13 @@ out_attributes = """
 """
 
 init_attributes = """
-        self.id_fanhao = id_fanhao
-        self.id_hash_code = id_hash_code
-        self.nm_resources = nm_resources
-        self.lj_magnet = lj_magnet
-        self.size = size
-        self.update_date = update_date
+        self.id_in_javbus = id_in_javbus
+        self.url_avatar = url_avatar
+        self.nm_cn = nm_cn
+        self.nm_jp: str = nm_jp
+        self.nm_en: str = nm_en
+        self.nm_kr: str = nm_kr
+        self.movie_num = movie_num
 """
 
 out_attribute_list = out_attributes.splitlines()
