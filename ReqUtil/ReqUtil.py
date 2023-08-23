@@ -12,6 +12,7 @@ class ReqUtil:
         else:
             self.session = requests.Session()
             self.session.headers = HEADERS
+            self.session.cookies.set('existmag','all')
             self.session.mount('https://', requests.adapters.HTTPAdapter(pool_connections=10, pool_maxsize=50))
         self.test_times = test_times
 
@@ -54,3 +55,6 @@ class ReqUtil:
             log.error(f"get请求出现异常!!! msg: {msg}"
                       f"\n\t异常: {e}"
                       f"\n\turl: {url}, params: {params} {f'code: {res.status_code}' if res else ''}")
+
+
+req_util = ReqUtil()
