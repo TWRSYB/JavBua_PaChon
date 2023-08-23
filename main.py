@@ -54,9 +54,6 @@ def get_actress_nm_lang(url_host_lang, id_in_javbus):
     res = req_util.try_get_req_times(url=f"{url_host_lang}{API_PATH_ACTRESS_MOVIE}/{id_in_javbus}",
                                      msg=f"获取女优多国语言名: url_host_lang: {url_host_lang} 女优ID: {id_in_javbus}")
     if res:
-        if url_host_lang == 'https://www.javbus.com':
-            print(res.text)
-
         return etree.HTML(res.text)
         # etree_res = etree.HTML(res.text)
         # xpath_list = etree_res.xpath("//div[@class='avatar-box aave']//span/text()")
@@ -153,7 +150,10 @@ def start():
 
 
 def test_save_actress():
-    actress_vo = save_actress(371)
+    ids = 'y1d,kn2,4o1,4o2,9ix,4fh,5t9,60d,67h,6el,6lp,6st,7e5,7l9'
+    id_list = ids.split(',')
+    for i, idd in enumerate(id_list):
+        actress_vo = save_actress(idd)
 
 
 if __name__ == '__main__':
