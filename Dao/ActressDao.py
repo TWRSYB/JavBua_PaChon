@@ -5,13 +5,14 @@ from LogUtil.LogUtil import com_log
 
 class ActressVo(ComVo):
 
-    def __init__(self, id_in_javbus, url_avatar, nm_cn, nm_jp='', nm_en="", nm_kr=''):
+    def __init__(self, id_in_javbus, url_avatar, nm_cn, nm_jp='', nm_en="", nm_kr='', movie_num=''):
         self.id_in_javbus = id_in_javbus
         self.url_avatar = url_avatar
         self.nm_cn = nm_cn
         self.nm_jp: str = nm_jp
         self.nm_en: str = nm_en
         self.nm_kr: str = nm_kr
+        self.movie_num = movie_num
 
 
 class ActressDao(ComDao):
