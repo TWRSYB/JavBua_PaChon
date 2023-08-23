@@ -374,6 +374,7 @@ def get_actress_movie_page(id_in_javbus, page_num) -> (List[MovieVo], bool):
                                          msg=f"获取女优影片列表, 没有中文, 获取韩文: 第{page_num}页 女优: {id_in_javbus}")
     have_next_page = False
     if res:
+        print(res.text)
         etree_res = etree.HTML(res.text)
         url_movie_page_list = etree_res.xpath("//a[@class='movie-box']/@href")
         page_list = etree_res.xpath("//ul[@class='pagination pagination-lg']/li/a/text()")
@@ -382,7 +383,7 @@ def get_actress_movie_page(id_in_javbus, page_num) -> (List[MovieVo], bool):
                 have_next_page = True
         id_fanhao_list = [url_movie_page.split('/')[-1] for url_movie_page in url_movie_page_list]
         print(id_fanhao_list)
-        print(len(id_fanhao_list))
+        print(id_in_javbus, len(id_fanhao_list))
 
         # 同步获取影片信息
         # for i, id_fanhao in enumerate(id_fanhao_list):
@@ -397,14 +398,14 @@ def get_actress_movie_page(id_in_javbus, page_num) -> (List[MovieVo], bool):
         #     process_log.process4(f"获取影片信息: 第{i + 1}个 女优: {id_in_javbus} 第{page_num}页 End")
 
         # 创建线程池, 异步多线程获取影片信息(整页开始)
-        # with concurrent.futures.ThreadPoolExecutor() as executor:
-        #     # 开启多个线程获取影片详情
-        #     futures = [executor.submit(get_movie_detail_async, args=(id_fanhao, id_in_javbus, page_num, i))
-        #                for i, id_fanhao in enumerate(id_fanhao_list)]
-        # # 等待所有线程完成并获取结果
-        # for future in concurrent.futures.as_completed(futures):
-        #     if future.result():
-        #         movie_list.append(future.result())
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            # 开启多个线程获取影片详情
+            futures = [executor.submit(get_movie_detail_async, args=(id_fanhao, id_in_javbus, page_num, i))
+                       for i, id_fanhao in enumerate(id_fanhao_list)]
+        # 等待所有线程完成并获取结果
+        for future in concurrent.futures.as_completed(futures):
+            if future.result():
+                movie_list.append(future.result())
     return movie_list, have_next_page
 
 
@@ -429,14 +430,19 @@ def test_get_actress_movie():
     # actress_dict = {"id_in_javbus": "lf1", "url_avatar": "/imgs/actress/371.jpg", "nm_cn": "朝桐光",
     #                 "nm_jp": "朝桐光", "nm_en": "Akari Asagiri", "nm_kr": "Akari Asagiri"}
     # actress_vo: ActressVo = dict_to_obj2(ActressVo, actress_dict)
-    id_in_javbus = 'y1d'
+    id_in_javbus = '7e5'
     get_actress_movie(id_in_javbus)
 
 
 def test_get_movie_detail():
-    get_movie_detail('111417-537')
+    fanhaos = '042811_01,050212_01,HEYZO-1430,021017_480,HEYZO-1448,TW-02708,TW-03914,Jukujo-4358,Jukujo-4356,071814_01,052215_416,GACHI-864,040123_001,150206_908_01,HEYZO-2491,101114_266,031516_01,102809_700,051813_878,061611-726,SKY-137,HEYZO-2659,PB-204,072508_389,030114_01,HEYZO-2419,121109_577_01,070413_940,SMD03,PLA23,070308_03,071223-001,052521_001,Jukujo-4241,140530-SHINA,042614_01,151218_1013_01,DWD05,GACHIP-214,032115_01,GACHI-290'
+    fanhao_list = fanhaos.split(',')
+    print(len(fanhao_list))
+    for i, fanhao in enumerate(fanhao_list):
+        get_movie_detail('111417-537', movie_order=i+1)
+
 
 
 if __name__ == '__main__':
-    test_get_actress_movie()
-    # test_get_movie_detail()
+    # test_get_actress_movie()
+    test_get_movie_detail()
